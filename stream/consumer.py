@@ -25,12 +25,12 @@ def street_from_address(location):
     return street or "Unknown"
 
 
-def hour_bucket(event_time):
+def month_bucket(event_time):
     try:
         timestamp = datetime.fromisoformat(str(event_time).replace("Z", "+00:00"))
     except ValueError:
         return "Unknown"
-    return timestamp.replace(minute=0, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
+    return timestamp.strftime("%Y-%m")
 
 
 consumer = KafkaConsumer(
@@ -52,8 +52,8 @@ while True:
         for msg in messages:
             ticket = msg.value
             street = street_from_address(ticket.get("location2"))
-            hour = hour_bucket(ticket.get("event_time"))
-            group_counts[(street, hour)] += 1
+            month = month_bucket(ticket.get("event_time"))
+            group_counts[(street, month)] += 1
             total_tickets += 1
             has_unrendered_updates = True
 
@@ -73,13 +73,13 @@ while True:
 
     lines = [
         f"Total Seen      : {total_tickets:,}",
-        "Tickets per Street and Hour (top 10):",
-        f"{'Street':<28} {'Hour':>16} {'Count':>8}",
+        "Tickets per Street and Month (top 10):",
+        f"{'Street':<28} {'Month':>16} {'Count':>8}",
         "-" * 55,
     ]
     lines.extend(
-        f"{street[:28]:<28} {hour:>16} {count:>8,}"
-        for (street, hour), count in top_groups
+        f"{street[:28]:<28} {month:>16} {count:>8,}"
+        for (street, month), count in top_groups
     )
     lines.append(f"Processing Rate : {processing_rate:.2f} tickets/sec")
     dashboard = "\n".join(lines)

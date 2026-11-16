@@ -2,6 +2,12 @@
 
 ## Overview
 
+Parking Tickets in Toronto for 2025
+Our Questions
+1. Which ten streets get the most parking tickets?
+2. What hour of the day are the most tickets issued? Which day of the week has the most?
+3. What is the average fine, and which infractions cost the most?
+
 This checkpoint contains the implementation completed for:
 
 - **Part 1:** Batch data processing and Parquet file generation
