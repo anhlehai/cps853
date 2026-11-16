@@ -1,5 +1,3 @@
-# Checkpoint 1 Submission
-
 ## Overview
 
 Parking Tickets in Toronto for 2025
