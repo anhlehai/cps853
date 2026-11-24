@@ -1,5 +1,8 @@
 
 import csv
+import os
+
+RAW_CSV = os.environ.get("RAW_CSV", "data/raw/file.csv")   # same file convert.py reads
 
 total_rows = 0
 missing_datetime = 0
@@ -11,7 +14,7 @@ passed_rows = 0
 failed_rows = 0
 
 # Open the parking tickets dataset
-with open("../Parking_Tags_Data_2025.csv", "r", encoding="cp1252") as file:
+with open(RAW_CSV, "r", encoding="cp1252") as file:
     # Skip blank lines before the header
     while True:
         position = file.tell()

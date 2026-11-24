@@ -4,9 +4,10 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import subprocess
+import sys
 
 # ---------- Paths ----------
-RAW_CSV = "../Parking_Tags_Data_2025.csv"          # change if needed
+RAW_CSV = os.environ.get("RAW_CSV", "data/raw/file.csv")   # change if needed (quality.py reads the same file)
 UNPART_DIR = "data/parquet_unpartitioned"
 PART_DIR = "data/parquet_partitioned_by_month"
 
@@ -17,7 +18,7 @@ for d in (UNPART_DIR, PART_DIR):
 # ---------- 1. Run quality checks ----------
 print("Running Quality & Monitoring checks...")
 subprocess.run(
-    ["python", "quality.py"],
+    [sys.executable, "quality.py"],          # same Python as this script (works on Windows too)
     check=True
 )
 
