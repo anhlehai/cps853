@@ -3,15 +3,25 @@ import shutil
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import subprocess
 
 # ---------- Paths ----------
-RAW_CSV = "data/raw/file.csv"          # change if needed
+RAW_CSV = "../Parking_Tags_Data_2025.csv"          # change if needed
 UNPART_DIR = "data/parquet_unpartitioned"
 PART_DIR = "data/parquet_partitioned_by_month"
 
 for d in (UNPART_DIR, PART_DIR):
     shutil.rmtree(d, ignore_errors=True)
     os.makedirs(d, exist_ok=True)
+
+# ---------- 1. Run quality checks ----------
+print("Running Quality & Monitoring checks...")
+subprocess.run(
+    ["python", "quality.py"],
+    check=True
+)
+
+
 
 # ---------- 1. Read CSV ----------
 print("Reading CSV...")
