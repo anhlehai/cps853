@@ -55,8 +55,18 @@ python convert.py      # quality checks, then CSV -> Parquet (unpartitioned, and
 python q1.py           # Spark: ten streets with the most tickets
 python q2.py           # Spark: tickets by hour of the day and by weekday
 python q3.py           # Spark: average fine, and the costliest infractions
-python benchmark.py    # Spark: the three questions timed on CSV vs Parquet
+python benchmark.py    # deep part: the questions timed on all three layouts
 ```
+
+### Deep part: storage layouts
+
+`benchmark.py` times Q1–Q3, plus a time-filtered query (tickets on Queen St W in March 2025), on three layouts:
+
+- the raw CSV
+- Parquet without partitioning
+- Parquet partitioned by year and month
+
+Each time is the average of 3 runs, every run reads from disk, and every layout must give the same answer. It prints each proposal target as met or not met, and saves the times and sizes to `results/benchmark_layouts.csv`. It isn't part of `run_all.py` because it takes several minutes.
 
 `convert.py` prints the size of the CSV and each Parquet layout, and the rows in and out. The Spark answers are saved in `results/`.
 
