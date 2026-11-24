@@ -9,7 +9,7 @@ import psycopg
 HERE = Path(__file__).resolve().parent
 
 # Matches the postgres service in docker-compose.yml. Override with DATABASE_URL if needed.
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://tickets:tickets@localhost:5432/tickets")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://tickets:tickets@localhost:5433/tickets")
 
 # Same rule as q1.py, benchmark.py and stream/consumer.py, so all parts agree on what a street is.
 _PREFIX = re.compile(r"^(NEAR|NR|OPP|OPPOSITE|AT|O/S|ADJ|BEHIND|REAR OF)\s+")
@@ -34,7 +34,10 @@ def connect(wait_seconds=60, autocommit=False):
         try:
             conn = psycopg.connect(DATABASE_URL, autocommit=autocommit)
             break
-        except psycopg.OperationalError:
+        except psycopg.OperationalError as e:
+            if "authentication failed" in str(e):
+                raise SystemExit(f"{DATABASE_URL} rejected the login: {e}\n"
+                                 "Is another PostgreSQL using that port? docker-compose.yml maps ours to 5433.")
             if time.monotonic() > deadline:
                 raise SystemExit(f"Could not reach PostgreSQL at {DATABASE_URL}. Is `docker compose up -d` running?")
             time.sleep(1)
@@ -52,8 +55,9 @@ def create_indexes(conn):
 
 
 def drop_indexes(conn):
-    names = re.findall(r"CREATE INDEX IF NOT EXISTS (\w+)", (HERE / "indexes.sql").read_text())
+    """Drop every idx_* index on tickets (also ones an older indexes.sql created)."""
     with conn.cursor() as cur:
-        for name in names:
+        cur.execute("SELECT indexname FROM pg_indexes WHERE tablename = 'tickets' AND indexname LIKE 'idx_%'")
+        for (name,) in cur.fetchall():
             cur.execute(f"DROP INDEX IF EXISTS {name}")
     conn.commit()

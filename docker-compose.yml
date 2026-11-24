@@ -23,8 +23,9 @@ services:
 
   postgres:
     image: postgres:16
+    shm_size: "512mb"          # the default 64 MB is too small for index builds and VACUUM on 2M rows
     ports:
-      - "5432:5432"
+      - "5433:5432"            # host port 5433, so a PostgreSQL already installed on the laptop (5432) doesn't clash
     environment:
       POSTGRES_USER: "tickets"
       POSTGRES_PASSWORD: "tickets"

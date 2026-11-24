@@ -39,7 +39,7 @@ def prepare(df):
     out["event_time"] = et.dt.strftime("%Y-%m-%d %H:%M:%S")
     out["street"] = out["location2"].map(street_from_address, na_action="ignore")
     out["hour_of_day"] = et.dt.hour.astype("Int16")
-    out["weekday"] = (et.dt.dayofweek + 1).astype("Int16")       # pandas Monday = 0 -> ISO Monday = 1
+    out["weekday"] = (et.dt.day_of_week + 1).astype("Int16")       # pandas Monday = 0 -> ISO Monday = 1
     return out[COPY_COLUMNS]
 
 

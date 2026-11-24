@@ -104,7 +104,7 @@ The producer sends records to Kafka and the consumer receives and processes them
 
 # Part 3: Serve (PostgreSQL)
 
-All batch and stream results live in one PostgreSQL database, started by `docker compose up -d` (user, password and database are all `tickets`, on port 5432). The tables are created by `serve/init.sql`.
+All batch and stream results live in one PostgreSQL database, started by `docker compose up -d` (user, password and database are all `tickets`, on host port 5433 so it doesn't clash with a PostgreSQL already installed on 5432). The tables are created by `serve/init.sql`.
 
 | Table | Filled by | Holds |
 |---|---|---|

@@ -59,9 +59,10 @@ LIVE = {
         GROUP BY infraction_code, infraction_description
         ORDER BY sum(set_fine_amount) DESC, infraction_code LIMIT 10""",
     "Filtered: top street in March 2025": """
-        SELECT count(*) AS tickets FROM tickets
+        SELECT street, count(*) AS tickets FROM tickets
         WHERE street = (SELECT street FROM batch_q1_top_streets ORDER BY rank LIMIT 1)
-          AND event_time >= '2025-03-01' AND event_time < '2025-04-01'""",
+          AND event_time >= '2025-03-01' AND event_time < '2025-04-01'
+        GROUP BY street""",
 }
 
 # ---------- lookups in the batch (Spark) result tables ----------
@@ -79,7 +80,7 @@ BATCH = {
 # ---------- the stream's running result ----------
 STREAM = {
     "Q1 top 10 streets": """
-        SELECT street, sum(tickets) AS tickets FROM stream_street_month
+        SELECT street, sum(tickets)::bigint AS tickets FROM stream_street_month
         WHERE street <> 'Unknown' GROUP BY street ORDER BY tickets DESC, street LIMIT 10""",
 }
 

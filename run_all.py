@@ -51,7 +51,7 @@ def main():
     ap.add_argument("--runs", type=int, default=10, help="runs per response time measurement")
     args = ap.parse_args()
 
-    wait_for_port("localhost", 5432, "PostgreSQL")
+    wait_for_port("localhost", 5433, "PostgreSQL")
 
     if not args.skip_batch:
         if not os.path.exists(RAW_CSV):
