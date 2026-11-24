@@ -51,6 +51,7 @@ LIVE = {
                count(*) AS tickets, sum(set_fine_amount) AS total_fines
         FROM tickets WHERE set_fine_amount IS NOT NULL
         GROUP BY infraction_code, infraction_description
+        HAVING count(*) >= 100              -- same minimum as q3.py, so a one-ticket code cannot top the list
         ORDER BY avg(set_fine_amount) DESC, count(*) DESC, infraction_code LIMIT 10""",
     "Q3c most money in total": """
         SELECT infraction_code, infraction_description, round(avg(set_fine_amount), 2) AS average_fine,

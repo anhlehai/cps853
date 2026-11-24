@@ -59,6 +59,7 @@ def q3(df):   # average fine, and the ten infractions with the highest average f
     avg = d.agg(F.avg("fine")).collect()[0][0]
     top = (d.groupBy("infraction_code", "infraction_description")
            .agg(F.avg("fine").alias("a"), F.count("*").alias("n"))
+           .where(F.col("n") >= 100)          # same minimum as q3.py: rank only infractions with 100+ tickets
            .orderBy(F.desc("a"), F.desc("n"), "infraction_code").limit(10).collect())
     return [("avg", round(avg, 4))] + [(r["infraction_code"], r["infraction_description"], round(r["a"], 4), r["n"]) for r in top]
 
