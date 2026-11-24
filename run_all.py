@@ -67,6 +67,16 @@ def main():
     if not args.skip_stream:
         step(f"Part 2 + 3: stream {'all' if not args.stream_rows else f'{args.stream_rows:,}'} rows into Kafka -> PostgreSQL")
         wait_for_port("localhost", 9092, "Kafka")
+        # Each run is a fresh replay: without this, a second run adds the same tickets again.
+        for attempt in range(1, 6):               # Kafka can take a few seconds to accept clients after the port opens
+            try:
+                run("serve/consumer_db.py", "--reset")
+                break
+            except subprocess.CalledProcessError:
+                if attempt == 5:
+                    raise
+                print("Kafka not ready yet, retrying in 5s ...")
+                time.sleep(5)
         consumer = subprocess.Popen([PY, "serve/consumer_db.py", "--idle-exit", "20"])
         env = dict(os.environ, PRODUCER_LIMIT=str(args.stream_rows), PRODUCER_DELAY=str(args.stream_delay),
                    PRODUCER_LOG_EVERY="10000")

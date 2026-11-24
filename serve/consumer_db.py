@@ -9,6 +9,7 @@ Every batch is applied in one transaction together with the Kafka offset it reac
 
 Run from the repository root:  python serve/consumer_db.py
 Stop after N idle seconds:     python serve/consumer_db.py --idle-exit 20
+Start a new replay from zero:  python serve/consumer_db.py --reset   (run_all.py does this)
 """
 import argparse
 import json
@@ -19,7 +20,7 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
-from kafka import KafkaConsumer, TopicPartition
+from kafka import KafkaAdminClient, KafkaConsumer, TopicPartition
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from db import connect, street_from_address  # noqa: E402
@@ -78,13 +79,41 @@ def flush(conn, counts, offsets, rows, last_event):
                 (rows, last_event))
 
 
+def reset(conn):
+    """Start the stream from scratch: empty the stream tables and delete the Kafka topic.
+
+    Without this, every replay appends the same tickets to the topic again and the counts in
+    stream_street_month keep growing. The producer recreates the topic when it next sends.
+    """
+    with conn.transaction():
+        conn.execute("TRUNCATE stream_street_month, stream_offsets, stream_progress")
+    admin = KafkaAdminClient(bootstrap_servers=BOOTSTRAP)
+    try:
+        if TOPIC in admin.list_topics():
+            admin.delete_topics([TOPIC])
+            deadline = time.monotonic() + 30
+            while TOPIC in admin.list_topics():    # deletion finishes in the background
+                if time.monotonic() > deadline:
+                    raise SystemExit(f"Kafka did not delete topic '{TOPIC}' within 30s.")
+                time.sleep(0.5)
+    finally:
+        admin.close()
+    print(f"Reset: emptied the stream tables and deleted topic '{TOPIC}'.")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--idle-exit", type=float, default=0,
                     help="stop after this many seconds without new rows (0 = run until Ctrl+C)")
+    ap.add_argument("--reset", action="store_true",
+                    help="empty the stream tables and delete the topic, then exit (run before a new replay)")
     args = ap.parse_args()
 
     conn = connect(autocommit=True)
+    if args.reset:
+        reset(conn)
+        conn.close()
+        return
     consumer = KafkaConsumer(
         bootstrap_servers=BOOTSTRAP,
         enable_auto_commit=False,          # the database holds the offsets, not Kafka
