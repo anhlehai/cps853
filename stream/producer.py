@@ -25,6 +25,13 @@ df = pd.read_parquet(
     "data/parquet_unpartitioned/tickets.parquet"
 )
 
+# convert.py already sets these rows aside; this guard keeps an older Parquet from crashing
+# the replay (a missing event_time cannot be sent as JSON or placed in time order).
+missing_time = int(df["event_time"].isna().sum())
+if missing_time:
+    print(f"Skipping {missing_time:,} rows without an event_time")
+    df = df[df["event_time"].notna()]
+
 df = df.sort_values("event_time")
 if LIMIT:
     df = df.head(LIMIT)
@@ -35,8 +42,7 @@ for i, (_, row) in enumerate(df.iterrows(), 1):
 
     record = row.to_dict()
 
-    if pd.notna(record["event_time"]):
-        record["event_time"] = str(record["event_time"])
+    record["event_time"] = str(record["event_time"])
 
     producer.send(TOPIC, record)
 
