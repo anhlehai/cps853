@@ -4,6 +4,9 @@ from pyspark.sql import SparkSession, functions as F
 
 PARQUET = "data/parquet_unpartitioned/tickets.parquet"   # change if your path differs
 OUT_DIR = "results"
+# An infraction needs at least this many tickets to be ranked by average fine, so a code
+# issued once (e.g. 437, a single $500 ticket) cannot top the list. Same rule in serve/query.py.
+MIN_TICKETS = 100
 
 spark = (SparkSession.builder.master("local[*]").appName("q3-fines")
          .config("spark.driver.memory", "2g").config("spark.sql.shuffle.partitions", "8").getOrCreate())
@@ -21,7 +24,9 @@ overall = priced.agg(F.avg("fine").alias("avg"), F.sum("fine").alias("sum"), F.m
 per = (priced.groupBy("infraction_code", "infraction_description")
        .agg(F.round(F.avg("fine"), 2).alias("average_fine"), F.count("*").alias("tickets"),
             F.round(F.sum("fine"), 2).alias("total_fines")))
-highest = per.orderBy(F.desc("average_fine"), F.desc("tickets"), "infraction_code").limit(10).collect()
+ranked = per.where(F.col("tickets") >= MIN_TICKETS)
+too_rare = per.count() - ranked.count()
+highest = ranked.orderBy(F.desc("average_fine"), F.desc("tickets"), "infraction_code").limit(10).collect()
 most_money = per.orderBy(F.desc("total_fines"), "infraction_code").limit(10).collect()
 
 print(f"\nTickets read: {total:,}   without a usable fine amount: {no_fine:,}")
@@ -32,7 +37,8 @@ def show(title, rows):
     print("Rank  Code  Avg fine   Tickets   Description")
     for i, r in enumerate(rows, 1):
         print(f"{i:>4}  {str(r['infraction_code']):>4}  ${r['average_fine']:>7,.2f}  {r['tickets']:>8,}   {r['infraction_description']}")
-show("Infractions with the highest average fine", highest)
+show(f"Infractions with the highest average fine (at least {MIN_TICKETS} tickets; "
+     f"{too_rare} rarer infractions left out)", highest)
 show("Infractions that bring in the most money in total", most_money)
 
 os.makedirs(OUT_DIR, exist_ok=True)
